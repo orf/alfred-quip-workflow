@@ -40,7 +40,7 @@
 	<key>createdby</key>
 	<string>Tom Forbes</string>
 	<key>description</key>
-	<string>Search quip</string>
+	<string>Search quip documents</string>
 	<key>disabled</key>
 	<false/>
 	<key>name</key>
@@ -134,7 +134,7 @@
 				<key>queuemode</key>
 				<integer>1</integer>
 				<key>runningsubtext</key>
-				<string>test</string>
+				<string>Searching Quip</string>
 				<key>script</key>
 				<string>python quip.py "{query}"</string>
 				<key>scriptargtype</key>
@@ -142,9 +142,9 @@
 				<key>scriptfile</key>
 				<string>quip.py</string>
 				<key>subtext</key>
-				<string>test</string>
+				<string></string>
 				<key>title</key>
-				<string>test</string>
+				<string>Search quip documents</string>
 				<key>type</key>
 				<integer>0</integer>
 				<key>withspace</key>
@@ -192,6 +192,6 @@
 		</dict>
 	</dict>
 	<key>webaddress</key>
-	<string></string>
+	<string>https://github.com/orf/alfred-quip-workflow</string>
 </dict>
 </plist>

@@ -52,10 +52,11 @@ def main(wf):
         run_in_background('update', cmd)
 
     if is_running('update'):
-        wf.add_item('Getting documents from Quip',
+        wf.add_item('Updating documents from Quip',
                     valid=False,
                     icon=ICON_INFO)
     if args.query:
+        # Yes, this really shouldn't be re-creating the database each time, but hey-ho. Seems fast enough
         query = args.query.lower().strip() + '*'
         db = sqlite3.connect(':memory:')
 
