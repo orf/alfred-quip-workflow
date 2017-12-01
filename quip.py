@@ -18,6 +18,13 @@ ICON_DOCUMENT = os.path.join(ICON_ROOT, 'ClippingText.icns')
 
 
 def main(wf):
+    if wf.update_available:
+        # Add a notification to top of Script Filter results
+        wf.add_item('New version available',
+                    'Action this item to install the update',
+                    autocomplete='workflow:update',
+                    icon=ICON_INFO)
+
     args = parser.parse_args(wf.args)
     if args.apikey:
         if not args.query:
@@ -87,5 +94,8 @@ def main(wf):
 
 
 if __name__ == u"__main__":
-    wf = Workflow(normalization='NFD')
+    wf = Workflow(normalization='NFD', update_settings={
+        'github_slug': 'orf/alfred-quip-workflow',
+        'frequency': 3,
+    })
     sys.exit(wf.run(main))
