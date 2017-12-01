@@ -1,13 +1,20 @@
 # encoding: utf-8
 import argparse
 import sys
-from workflow import Workflow, ICON_WARNING, ICON_INFO, web, notify, PasswordNotFound, ICON_WEB
+from workflow import Workflow, ICON_WARNING, ICON_INFO, web, notify, PasswordNotFound
+from workflow.workflow import ICON_ROOT
+import os
 import webbrowser
 from workflow.background import run_in_background, is_running
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--setkey', dest='apikey', action='store_true')
 parser.add_argument('query', nargs='?', default=None)
+
+import sqlite3
+
+
+ICON_DOCUMENT = os.path.join(ICON_ROOT, 'ClippingText.icns')
 
 
 def main(wf):
@@ -31,9 +38,9 @@ def main(wf):
         wf.send_feedback()
         return 0
 
-    threads = wf.cached_data('documents', None, max_age=0)
+    cached_threads = wf.cached_data('documents', None, max_age=0)
 
-    if not wf.cached_data_fresh('documents', max_age=60 * 60 * 60):
+    if not wf.cached_data_fresh('documents', max_age=60 * 60):
         cmd = ['/usr/bin/python', wf.workflowfile('quip-update.py')]
         run_in_background('update', cmd)
 
@@ -41,22 +48,44 @@ def main(wf):
         wf.add_item('Getting documents from Quip',
                     valid=False,
                     icon=ICON_INFO)
+    if args.query:
+        query = args.query.lower().strip() + '*'
+        db = sqlite3.connect(':memory:')
 
-    if args.query and threads:
-        threads = wf.filter(args.query, threads, key=lambda item: item['title'], min_score=20)
+        cursor = db.cursor()
+        cursor.execute('CREATE VIRTUAL TABLE threads USING fts5(id, title, link, text)')
+        cursor.executemany('INSERT INTO threads (id, title, link, text) VALUES (?, ?, ?, ?)',
+                           [
+                               (result['id'], result['title'], result['link'], result['text'])
+                               for result in cached_threads
+                           ])
+        cursor.execute('''SELECT id, title, link,
+                            snippet(threads, 3, '', '', '', 10) as text_highlight
+                          FROM threads
+                          WHERE threads MATCH ?
+                          ORDER BY bm25(threads, 0, 1.0, 0, 0.5)
+                          LIMIT 15''', (query,))
+        threads = cursor.fetchall()
+        # wf.logger.info(threads2)
+        # threads = wf.filter(query, threads, key=lambda item: item['title'], min_score=20)
 
-    if not threads:  # we have no data to show, so show a warning and stop
-        wf.add_item('No threads found', icon=ICON_WARNING)
-        wf.send_feedback()
-        return 0
+        if not threads:  # we have no data to show, so show a warning and stop
+            wf.add_item('No documents found', icon=ICON_WARNING)
+            wf.send_feedback()
+            return 0
 
-    for thread in threads:
-        wf.add_item(title=thread['title'], arg=thread['link'],
-                    uid=thread['id'], icon=ICON_WEB, valid=True)
+        for (id, title, link, snippet) in threads:
+            wf.add_item(title=title, arg=link,
+                        quicklookurl=link,
+                        subtitle=snippet,
+                        icon=ICON_DOCUMENT,
+                        uid=id, valid=True)
+    else:
+        wf.add_item('Enter a search term', valid=False, icon=ICON_INFO)
 
     wf.send_feedback()
 
 
 if __name__ == u"__main__":
-    wf = Workflow()
+    wf = Workflow(normalization='NFD')
     sys.exit(wf.run(main))

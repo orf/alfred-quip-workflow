@@ -1,12 +1,23 @@
 # encoding: utf-8
-import argparse
 import sys
-from workflow import Workflow, ICON_WARNING, web, notify, PasswordNotFound
-import webbrowser
+from workflow import Workflow, web, PasswordNotFound
 
 user_api = 'https://platform.quip.com/1/users/current'
 folders_api = 'https://platform.quip.com/1/folders/'
 threads_api = 'https://platform.quip.com/1/threads/'
+
+from HTMLParser import HTMLParser
+
+
+class Parser(HTMLParser):
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self.text = []
+
+    def handle_data(self, data):
+        data = data.strip()
+        if data:
+            self.text.append(' '.join(d.strip().lower() for d in data.split(' ') if d.strip()))
 
 
 def get_documents(api_key, logger):
@@ -30,13 +41,21 @@ def get_documents(api_key, logger):
     logger.info('Fetching {0} documents'.format(len(documents)))
     document_ids = ','.join(documents)
     document_data = web.get(threads_api, {'ids': document_ids}, headers=auth_headers).json()
-    return [
-        {'title': thread['thread']['title'],
-         'link': thread['thread']['link'],
-         'type': thread['thread']['type'],
-         'id': thread['thread']['id']}
-        for thread in document_data.values()
-    ]
+
+    results = []
+
+    for thread in document_data.values():
+        parser = Parser()
+        result = {'title': thread['thread']['title'],
+                  'link': thread['thread']['link'],
+                  'type': thread['thread']['type'],
+                  'id': thread['thread']['id']}
+
+        parser.feed(thread.get('html', ''))
+        result['text'] = wf.decode(' '.join(parser.text))
+        results.append(result)
+
+    return results
 
 
 def main(wf):
@@ -45,9 +64,9 @@ def main(wf):
     except PasswordNotFound:  # API key has not yet been set
         wf.logger.error('No password set')
 
-    wf.cached_data('documents', lambda: get_documents(api_key, wf.logger), max_age=60 * 60 * 60)
+    wf.cached_data('documents', lambda: get_documents(api_key, wf.logger), max_age=60 * 60)
 
 
 if __name__ == u"__main__":
-    wf = Workflow()
+    wf = Workflow(normalization='NFD')
     sys.exit(wf.run(main))
