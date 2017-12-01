@@ -96,6 +96,6 @@ def main(wf):
 if __name__ == u"__main__":
     wf = Workflow(normalization='NFD', update_settings={
         'github_slug': 'orf/alfred-quip-workflow',
-        'frequency': 3,
+        'frequency': 1,
     })
     sys.exit(wf.run(main))
