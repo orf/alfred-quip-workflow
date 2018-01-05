@@ -63,8 +63,9 @@ def main(wf):
         api_key = wf.get_password('quip_api_key')
     except PasswordNotFound:  # API key has not yet been set
         wf.logger.error('No password set')
+        return
 
-    wf.cached_data('documents', lambda: get_documents(api_key, wf.logger), max_age=60 * 60)
+    wf.cache_data('documents', get_documents(api_key, wf.logger))
 
 
 if __name__ == u"__main__":

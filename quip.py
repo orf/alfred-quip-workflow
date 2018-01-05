@@ -45,7 +45,7 @@ def main(wf):
         wf.send_feedback()
         return 0
 
-    cached_threads = wf.cached_data('documents', None, max_age=0)
+    cached_threads = wf.cached_data('documents', [], max_age=0)
 
     if not wf.cached_data_fresh('documents', max_age=60 * 60):
         cmd = ['/usr/bin/python', wf.workflowfile('quip-update.py')]
