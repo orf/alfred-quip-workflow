@@ -1,7 +1,7 @@
 # encoding: utf-8
 import argparse
 import sys
-from workflow import Workflow, ICON_WARNING, ICON_INFO, web, notify, PasswordNotFound
+from workflow import Workflow, ICON_WARNING, ICON_INFO, notify, PasswordNotFound
 from workflow.workflow import ICON_ROOT
 import os
 import webbrowser
@@ -39,13 +39,13 @@ def main(wf):
         wf.get_password('quip_api_key')
     except PasswordNotFound:  # API key has not yet been set
         wf.add_item('No API key set.',
-                    'Please use setquipkey to set your Quip API key.',
+                    'Please use set-quip-key to set your Quip API key.',
                     valid=False,
                     icon=ICON_WARNING)
         wf.send_feedback()
         return 0
 
-    cached_threads = wf.cached_data('documents', [], max_age=0)
+    cached_threads = wf.cached_data('documents', None, max_age=0)
 
     if not wf.cached_data_fresh('documents', max_age=60 * 60):
         cmd = ['/usr/bin/python', wf.workflowfile('quip-update.py')]
@@ -65,7 +65,7 @@ def main(wf):
         cursor.executemany('INSERT INTO threads (id, title, link, text) VALUES (?, ?, ?, ?)',
                            [
                                (result['id'], result['title'], result['link'], result['text'])
-                               for result in cached_threads
+                               for result in (cached_threads or [])
                            ])
         cursor.execute('''SELECT id, title, link,
                             snippet(threads, 3, '', '', '', 10) as text_highlight

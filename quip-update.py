@@ -1,6 +1,6 @@
 # encoding: utf-8
 import sys
-from workflow import Workflow, web, PasswordNotFound
+from workflow import Workflow, web, PasswordNotFound, notify
 
 user_api = 'https://platform.quip.com/1/users/current'
 folders_api = 'https://platform.quip.com/1/folders/'
@@ -20,9 +20,15 @@ class Parser(HTMLParser):
             self.text.append(' '.join(d.strip().lower() for d in data.split(' ') if d.strip()))
 
 
-def get_documents(api_key, logger):
+def get_documents(wf, api_key, logger):
     auth_headers = {'Authorization': 'Bearer {0}'.format(api_key)}
-    user_response = web.get(user_api, headers=auth_headers).json()
+    user_response = web.get(user_api, headers=auth_headers)
+
+    if user_response.status_code != 200:
+        wf.delete_password('quip_api_key')
+        notify.notify('Quip API key incorrect, please re-set')
+    else:
+        user_response = user_response.json()
 
     folders = user_response['group_folder_ids'] + [user_response['private_folder_id']]
     documents = set()
@@ -65,7 +71,7 @@ def main(wf):
         wf.logger.error('No password set')
         return
 
-    wf.cache_data('documents', get_documents(api_key, wf.logger))
+    wf.cache_data('documents', get_documents(wf, api_key, wf.logger))
 
 
 if __name__ == u"__main__":
