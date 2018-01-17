@@ -28,7 +28,7 @@ def main(wf):
     args = parser.parse_args(wf.args)
     if args.apikey:
         if not args.query:
-            webbrowser.open('https://marvelapp.quip.com/dev/token')
+            webbrowser.open('https://quip.com/dev/token')
             return 0
 
         wf.save_password('quip_api_key', args.query)
